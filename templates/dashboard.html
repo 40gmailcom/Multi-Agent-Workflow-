@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 24px; font-weight: 600; }
+        .header p { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-card .label {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* 面板 */
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 表格 */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; padding: 10px 12px; background: #fafafa; border-bottom: 2px solid #eee; color: #666; font-weight: 600; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover { background: #f8f9ff; }
+
+        /* 状态徽章 */
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-idle { background: #e8f5e9; color: #2e7d32; }
+        .badge-running { background: #e3f2fd; color: #1565c0; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-failed { background: #fce4ec; color: #c62828; }
+        .badge-paused { background: #fff3e0; color: #e65100; }
+        .badge-cancelled { background: #f5f5f5; color: #757575; }
+        .badge-pending { background: #fff8e1; color: #f57f17; }
+        .badge-assigned { background: #e8eaf6; color: #283593; }
+        .badge-timeout { background: #fce4ec; color: #c62828; }
+        .badge-busy { background: #e3f2fd; color: #1565c0; }
+        .badge-error { background: #fce4ec; color: #c62828; }
+        .badge-offline { background: #f5f5f5; color: #757575; }
+
+        /* Agent卡片 */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        .agent-card {
+            background: #fafbff;
+            border: 1px solid #e8eaf6;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .agent-card .name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+        .agent-card .info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 6px;
+        }
+        .agent-card .capabilities {
+            margin-top: 8px;
+        }
+        .capability-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            margin: 2px;
+            border-radius: 8px;
+            font-size: 11px;
+            background: #e8eaf6;
+            color: #3f51b5;
+        }
+
+        /* 告警 */
+        .alert-item {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .alert-WARNING { background: #fff3e0; border-left: 3px solid #ff9800; }
+        .alert-ERROR { background: #fce4ec; border-left: 3px solid #f44336; }
+        .alert-CRITICAL { background: #ffebee; border-left: 3px solid #b71c1c; }
+
+        /* 操作按钮 */
+        .btn {
+            display: inline-block;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: #667eea; }
+        .btn-success { background: #4caf50; }
+        .btn-danger { background: #f44336; }
+        .btn-warning { background: #ff9800; }
+        .btn-sm { padding: 3px 10px; font-size: 12px; }
+
+        /* 两栏布局 */
+        .two-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .two-cols { grid-template-columns: 1fr; }
+        }
+
+        /* 报销表单 */
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102,126,234,0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+        }
+
+        .auto-refresh {
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 {{ title }}</h1>
+        <p>多Agent协作 · 自动化工作流 · 实时监控</p>
+    </div>
+
+    <div class="container">
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value">{{ stats.workflows.get('running', 0) }}</div>
+                <div class="label">运行中工作流</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">{{ stats.workflows.get('completed', 0) }}</div>
+                <div class="label">已完成工作流</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">{{ stats.tasks.get('completed', 0) | default(0) }}</div>
+                <div class="label">已完成任务</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">{{ stats.tasks.get('failed', 0) | default(0) }}</div>
+                <div class="label">失败任务</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">{{ stats.agent_count }}</div>
+                <div class="label">注册Agent</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">{{ stats.message_count }}</div>
+                <div class="label">消息总数</div>
+            </div>
+        </div>
+
+        <div class="two-cols">
+            <!-- 左侧：工作流实例列表 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>📋 工作流实例</span>
+                    <span class="auto-refresh">自动刷新: 5s</span>
+                </div>
+                {% if instances %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for wf in instances %}
+                        <tr>
+                            <td title="{{ wf.id }}">{{ wf.name[:20] }}{% if wf.name|length > 20 %}...{% endif %}</td>
+                            <td><span class="badge badge-{{ wf.status }}">{{ wf.status }}</span></td>
+                            <td>{{ wf.created_at[:19] if wf.created_at else '-' }}</td>
+                            <td>
+                                {% if wf.status == 'idle' %}
+                                <button class="btn btn-primary btn-sm" onclick="startWorkflow('{{ wf.id }}')">启动</button>
+                                {% elif wf.status == 'running' %}
+                                <button class="btn btn-warning btn-sm" onclick="pauseWorkflow('{{ wf.id }}')">暂停</button>
+                                {% elif wf.status == 'paused' %}
+                                <button class="btn btn-success btn-sm" onclick="resumeWorkflow('{{ wf.id }}')">恢复</button>
+                                {% endif %}
+                                {% if wf.status in ['running', 'paused', 'idle'] %}
+                                <button class="btn btn-danger btn-sm" onclick="cancelWorkflow('{{ wf.id }}')">取消</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">暂无工作流实例</div>
+                {% endif %}
+            </div>
+
+            <!-- 右侧：提交报销单 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>💰 提交报销单</span>
+                </div>
+                <form id="reimbursementForm" onsubmit="submitReimbursement(event)">
+                    <div class="form-group">
+                        <label>申请人</label>
+                        <input type="text" id="applicant" required placeholder="请输入姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>部门</label>
+                        <input type="text" id="department" placeholder="请输入部门">
+                    </div>
+                    <div class="form-group">
+                        <label>金额（元）</label>
+                        <input type="number" id="amount" required min="0.01" step="0.01" placeholder="请输入金额">
+                    </div>
+                    <div class="form-group">
+                        <label>报销说明</label>
+                        <textarea id="description" rows="3" placeholder="请输入报销说明"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">提交报销</button>
+                    <p style="font-size:12px;color:#888;margin-top:8px;text-align:center;">
+                        💡 金额 &lt; 1000元自动审批通过，≥ 1000元需人工审批
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Agent状态 -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>🤖 Agent 状态</span>
+            </div>
+            <div class="agents-grid">
+                {% for agent in agents %}
+                <div class="agent-card">
+                    <div class="name">{{ agent.name }}</div>
+                    <div class="info">
+                        角色: {{ agent.role }} · 状态:
+                        <span class="badge badge-{{ agent.status }}">{{ agent.status }}</span>
+                    </div>
+                    <div class="info">ID: {{ agent.id }}</div>
+                    <div class="capabilities">
+                        {% for cap in agent.capabilities %}
+                        <span class="capability-tag">{{ cap }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="two-cols">
+            <!-- 监控统计 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>📊 监控统计</span>
+                </div>
+                {% if monitor_stats %}
+                <table>
+                    <thead>
+                        <tr><th>指标</th><th>数值</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in monitor_stats.items() %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">暂无监控数据</div>
+                {% endif %}
+            </div>
+
+            <!-- 最近告警 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>⚠️ 最近告警</span>
+                </div>
+                {% if recent_alerts %}
+                    {% for alert in recent_alerts %}
+                    <div class="alert-item alert-{{ alert.level }}">
+                        <strong>[{{ alert.level }}]</strong> {{ alert.message }}
+                        <div style="font-size:11px;color:#888;margin-top:2px;">{{ alert.timestamp[:19] if alert.timestamp else '' }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="empty-state">✅ 暂无告警</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 工作流操作
+        async function apiCall(url, method = 'POST') {
+            try {
+                const resp = await fetch(url, { method });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast(data.message || '操作成功');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.message || '操作失败', 'error');
+                }
+            } catch (e) {
+                showToast('请求失败: ' + e.message, 'error');
+            }
+        }
+
+        function startWorkflow(id) { apiCall(`/api/workflows/instances/${id}/start`); }
+        function pauseWorkflow(id) { apiCall(`/api/workflows/instances/${id}/pause`); }
+        function resumeWorkflow(id) { apiCall(`/api/workflows/instances/${id}/resume`); }
+        function cancelWorkflow(id) { apiCall(`/api/workflows/instances/${id}/cancel`); }
+
+        // 提交报销单
+        async function submitReimbursement(event) {
+            event.preventDefault();
+            const data = {
+                applicant: document.getElementById('applicant').value,
+                department: document.getElementById('department').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                description: document.getElementById('description').value,
+            };
+            try {
+                const resp = await fetch('/api/reimbursements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    showToast('报销单提交成功！' + (result.data.message || ''));
+                    document.getElementById('reimbursementForm').reset();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(result.message || '提交失败', 'error');
+                }
+            } catch (e) {
+                showToast('提交失败: ' + e.message, 'error');
+            }
+        }
+
+        // Toast提示
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; padding: 12px 24px;
+                border-radius: 8px; color: white; font-size: 14px; z-index: 9999;
+                background: ${type === 'error' ? '#f44336' : '#4caf50'};
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: fadeIn 0.3s ease;
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 自动刷新
+        setInterval(() => location.reload(), 5000);
+    </script>
+</body>
+</html>
